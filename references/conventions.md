@@ -29,6 +29,25 @@ sessions écrivent le même repo.
   d'amélioration du document). Distinct de `docs/.rfc-workflow/` qui
   appartient à ce skill. Ne pas les mélanger.
 
+## Reconnaître la catégorie d'un document
+
+Les signaux sont dans les ~10 premières lignes (`Status`, `Board note`,
+`Document class`) — il suffit de les lire pour classer, sans lire le
+document entier :
+
+- **Document vivant** — le `Board note` dit explicitement qu'il reste
+  en place même une fois une partie livrée : c'est un contrat ou un
+  registre de triggers, pas une proposition à sens unique. → `living/`
+- **Postmortem permanent** — une ligne `Document class` dit que le
+  document vaut comme archive indépendamment du code. → `living/`
+- **Proposition classique** — aucun de ces signaux. C'est la seule
+  catégorie qui transite par `proposals/` puis `implemented/` ou
+  `rejected/`.
+
+Cette typologie vient de l'ex-skill `rfc-status`. Sa règle d'origine —
+supprimer une proposition une fois implémentée — est caduque depuis
+l'introduction de `implemented/` : on déplace, on ne supprime plus.
+
 ## Skills voisins (ne pas dupliquer leur rôle)
 
 - `rfc-review` — améliore le DOCUMENT RFC (multi-agents, coûteux,
