@@ -350,10 +350,18 @@ document.
    - Le premier dit ce que la RFC fait en mots de tous les jours, puis
      bascule sur « **mais surtout** » pour donner le vrai enjeu — celui
      que le titre ne dit pas.
-   - Le second situe la RFC parmi ses voisines (« RFC-0027 apprend à
-     s'abstenir ; RFC-0028 donne l'étage auquel déléguer »), et assume un
-     avis sur ce que ça vaut. Une brique se comprend par sa place, pas
-     par sa description isolée.
+   - Le second **situe** la RFC, et assume un avis sur ce que ça vaut.
+     Situer veut dire deux choses selon le document :
+     - une RFC vivante se situe **parmi ses voisines** — « RFC-0027
+       apprend à s'abstenir ; RFC-0028 donne l'étage auquel déléguer » ;
+     - une RFC classée dans `rejected/` ou tenue comme archive se situe
+       **dans le temps du projet** : pourquoi le document existe encore
+       alors que rien n'en sera implémenté — « mesuré sur 3 247 cas, le
+       prototype ne bat la version en service dans aucune configuration,
+       si bien qu'on ne peut plus reproposer la piste sans savoir ce
+       qu'elle coûte ».
+
+   Une brique se comprend par sa place, jamais par sa description isolée.
 3. Insérer ou remplacer. Si une section `## En clair` existe déjà, la
    **remplacer intégralement** — jamais en empiler deux. Opération
    idempotente : relancer le mode sur la même RFC ne change rien d'autre.

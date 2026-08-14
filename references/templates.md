@@ -114,8 +114,10 @@ Le premier paragraphe est **une seule phrase**, en deux temps autour du
 pivot « mais surtout » : la première moitié dit la fonction, la seconde
 dit la vraie raison d'être. C'est le cœur de l'exercice — si cette phrase
 demande deux phrases, c'est qu'on n'a pas encore trouvé l'enjeu. Le second
-paragraphe situe la RFC parmi ses voisines — c'est ce qui rend une brique
-compréhensible, pas sa description isolée.
+paragraphe situe la RFC — parmi ses voisines si elle est vivante, dans le
+temps du projet si c'est une archive (`rejected/`, hypothèse falsifiée,
+document conservé pour ce qu'il interdit de reproposer). C'est ce qui rend
+une brique compréhensible, pas sa description isolée.
 
 Modèle de ton (vulgarisation de RFC-0028) :
 
