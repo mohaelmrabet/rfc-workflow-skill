@@ -1,7 +1,7 @@
 ---
 name: rfc-workflow
-description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final et reprise entre sessions. Ne modifie jamais le document RFC lui-même (ça c'est rfc-review) ; il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Couvre aussi l'inventaire du dossier docs/rfc (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, ou de faire le point sur docs/rfc (ex. "Implémente RFC-0114", "Rejette RFC-0023", "Statut des RFC").
-argument-hint: "[analyse|implémente|review|continue|finalise|rejette|statut] [RFC-XXXX]"
+description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Couvre aussi l'inventaire du dossier docs/rfc (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur docs/rfc, ou de rendre une RFC compréhensible en langage courant (ex. "Implémente RFC-0114", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029").
+argument-hint: "[analyse|implémente|review|continue|finalise|rejette|statut|vulgarise] [RFC-XXXX]"
 allowed-tools: [Read, Edit, Write, Bash, Grep, Glob]
 ---
 
@@ -125,6 +125,7 @@ Un seul point manquant → l'état reste TESTING (ou BLOCKED), jamais DONE.
 | "Finalise RFC-XXXX" | 3 → 4 → 5 → 6 → 7 |
 | "Rejette RFC-XXXX" | prototype + mesure, puis 7 — jamais de rejet sans chiffres |
 | "Statut des RFC" / "Fais le point sur docs/rfc" | 8 uniquement — aucune modification de code, aucun numéro de RFC requis |
+| "Vulgarise RFC-XXXX" / "Explique-moi RFC-XXXX simplement" | 9 uniquement — aucune modification de code ; seule écriture autorisée : la section « En clair » en tête du document RFC |
 
 ## Phase 0 — Reprise ("Continue")
 
@@ -329,6 +330,56 @@ Ce mode remplace l'ancien skill `rfc-status`, fusionné ici le
 2026-08-13 : les conventions n'existent qu'à un seul endroit
 (`references/conventions.md`), et elles avaient déjà divergé entre les
 deux skills.
+
+## Phase 9 — Vulgarisation (« En clair »)
+
+Rendre la RFC compréhensible **sans connaissance préalable du projet**,
+en insérant une section `## En clair` en tête du document, juste après
+le titre `#` et avant tout le reste (statut, board note, corps).
+
+C'est la **seule** écriture que ce skill s'autorise dans un document RFC.
+Elle est additive : le corps de la RFC n'est ni reformulé, ni réordonné,
+ni corrigé — une erreur repérée en chemin va en Follow-up, pas dans le
+document.
+
+1. Lire la RFC une seule fois, en entier. Aucune lecture de code : la
+   vulgarisation explique ce que la RFC **dit**, pas ce que le code fait.
+2. Écrire la section selon le template « En clair » de
+   `references/templates.md` : **deux courts paragraphes de prose**, pas
+   un formulaire à puces.
+   - Le premier dit ce que la RFC fait en mots de tous les jours, puis
+     bascule sur « **mais surtout** » pour donner le vrai enjeu — celui
+     que le titre ne dit pas.
+   - Le second situe la RFC parmi ses voisines (« RFC-0027 apprend à
+     s'abstenir ; RFC-0028 donne l'étage auquel déléguer »), et assume un
+     avis sur ce que ça vaut. Une brique se comprend par sa place, pas
+     par sa description isolée.
+3. Insérer ou remplacer. Si une section `## En clair` existe déjà, la
+   **remplacer intégralement** — jamais en empiler deux. Opération
+   idempotente : relancer le mode sur la même RFC ne change rien d'autre.
+4. Afficher à l'utilisateur la section produite, et lui demander si elle
+   lui parle avant de considérer le travail fini.
+
+Contraintes de rédaction :
+
+- **10 lignes de texte maximum, tout compris** (lignes vides non
+  comptées), et viser 6. C'est la contrainte principale du mode :
+  au-delà, on relit une seconde RFC au lieu de la comprendre.
+- Pas de glossaire, pas de liste de « ce qui change / ne change pas » :
+  un terme technique inévitable se traduit dans la phrase même, entre
+  tirets. Le reste du vocabulaire disparaît.
+- Si ça ne rentre pas, c'est qu'on explique des détails : couper les
+  détails, pas la clarté. Les seuils, noms de classes et énumérations
+  appartiennent au corps du document.
+- Zéro terme technique non traduit dans la même phrase ou dans le jargon.
+- Aucune invention : rien qui ne soit pas dans la RFC. Si un point est
+  incompréhensible faute d'information dans le document, l'écrire tel
+  quel (« la RFC ne dit pas comment… ») plutôt que de combler le trou.
+- Pas de chiffres, seuils ou noms de classe recopiés pour faire sérieux :
+  ils appartiennent au corps du document.
+
+En mode "Implémente" ou "Analyse", ne pas déclencher cette phase
+d'office — elle ne se fait que sur demande explicite.
 
 ## Gestion de session — CONTEXT WARNING
 

@@ -90,6 +90,46 @@ exacts : exécutable sans aucune nouvelle exploration>
 connus (mauvais entrypoint, conteneur inadapté…)>
 ```
 
+## En clair — inséré en tête du document RFC (phase 9)
+
+Placement : juste après le titre `#` de la RFC, avant le statut et le
+corps. **10 lignes de texte maximum**, une par entrée, lignes vides non
+comptées. Si la section existe déjà, la remplacer entièrement — jamais
+deux sections « En clair » dans un document.
+
+**De la prose, pas un formulaire.** Pas de titres, pas de puces, pas
+d'étiquettes en gras : deux courts paragraphes qu'on lit d'une traite.
+
+```markdown
+## En clair
+
+RFC-XXXX consiste à <ce qu'elle fait, en mots de tous les jours>, mais
+surtout à <le vrai enjeu, celui qu'on ne voit pas dans le titre>.
+
+Et <ce que ça vaut dans l'ensemble> : <RFC voisine> <ce qu'elle apporte> ;
+RFC-XXXX <ce qu'elle ajoute par-dessus>.
+```
+
+Le premier paragraphe est **une seule phrase**, en deux temps autour du
+pivot « mais surtout » : la première moitié dit la fonction, la seconde
+dit la vraie raison d'être. C'est le cœur de l'exercice — si cette phrase
+demande deux phrases, c'est qu'on n'a pas encore trouvé l'enjeu. Le second
+paragraphe situe la RFC parmi ses voisines — c'est ce qui rend une brique
+compréhensible, pas sa description isolée.
+
+Modèle de ton (vulgarisation de RFC-0028) :
+
+> RFC-0028 consiste à brancher le vrai cerveau sémantique de Concio, mais
+> surtout à faire en sorte que Concio sache dire « je n'ai pas ce cerveau
+> disponible » plutôt que de faire semblant de l'avoir.
+>
+> Et à mon avis, c'est une très bonne évolution de l'architecture :
+> RFC-0027 apprend à Concio à s'abstenir ; RFC-0028 lui donne enfin un
+> étage fiable auquel déléguer ces abstentions.
+
+Un terme technique inévitable se traduit dans la phrase même, entre
+tirets. Jamais de glossaire : un glossaire, c'est déjà trop long.
+
 ## Matrice de conformité
 
 Statuts : `PASS` · `PARTIAL` · `FAIL` · `NOT_TESTED`.

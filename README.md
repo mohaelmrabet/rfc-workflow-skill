@@ -4,8 +4,9 @@ Skill [Claude Code](https://claude.com/claude-code) qui pilote le cycle de vie
 complet d'une RFC : analyse, implémentation, tests, review, matrice de
 conformité, handoff, classement final.
 
-Il **implémente ce que la RFC décide** ; il ne réécrit jamais le document
-lui-même. Son critère d'optimisation est **qualité du travail / contexte
+Il **implémente ce que la RFC décide** ; il ne réécrit jamais le corps du
+document. Seule exception, le mode « vulgarise », qui ajoute en tête du
+document une section « En clair » — le reste du texte n'est pas touché. Son critère d'optimisation est **qualité du travail / contexte
 consommé** : pas de subagents par défaut, pas de scan global du repo, lectures
 chirurgicales, tests ciblés.
 
@@ -37,6 +38,7 @@ Le skill se déclenche sur l'intention, ou explicitement via `/rfc-workflow`.
 | « Finalise RFC-0114 » | 3 → 7 |
 | « Rejette RFC-0114 » | prototype + mesure, puis classement |
 | « Statut des RFC » | 8 — inventaire de `docs/rfc/` |
+| « Vulgarise RFC-0114 » | 9 — section « En clair » en tête du document |
 
 Le mode ni le numéro ne se devinent : s'ils manquent, le skill demande.
 
@@ -79,7 +81,7 @@ Tout vit dans `docs/.rfc-workflow/` du projet cible :
 ## Structure
 
 ```
-SKILL.md                    workflow, machine d'états, phases 0-8
+SKILL.md                    workflow, machine d'états, phases 0-9
 references/conventions.md   conventions du repo cible (RFC, tests, git)
 references/templates.md     analyse, handoff, matrice de conformité
 ```

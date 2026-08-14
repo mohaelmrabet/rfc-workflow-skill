@@ -54,7 +54,9 @@ l'introduction de `implemented/` : on déplace, on ne supprime plus.
   uniquement sur demande explicite de l'utilisateur).
 - `rfc-workflow` (ce skill) — implémente la RFC dans le code, la classe
   en fin de travail, et tient l'inventaire du dossier (mode « statut »,
-  ex-skill `rfc-status`, fusionné ici le 2026-08-13).
+  ex-skill `rfc-status`, fusionné ici le 2026-08-13). Il ne touche au
+  document que pour y insérer la section « En clair » (mode
+  « vulgarise ») ; toute autre réécriture appartient à `rfc-review`.
 
 ## Code et tests
 
