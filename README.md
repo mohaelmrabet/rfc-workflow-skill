@@ -40,6 +40,11 @@ Le skill se déclenche sur l'intention, ou explicitement via `/rfc-workflow`.
 | « Statut des RFC » | 8 — inventaire de `docs/rfc/` |
 | « Vulgarise RFC-0114 » | 9 — section « En clair » en tête du document |
 
+Toute RFC ouvre sur une section **« En clair »** : deux paragraphes en langage
+courant, dix lignes au plus. Le skill l'écrit d'office dès qu'il ouvre une RFC
+qui n'en a pas — une nouvelle proposition en repart vulgarisée sans qu'on le
+demande. Le mode ci-dessus sert à la refaire.
+
 Le mode ni le numéro ne se devinent : s'ils manquent, le skill demande.
 
 ## Machine d'états

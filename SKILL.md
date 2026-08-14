@@ -18,6 +18,14 @@ ne pas deviner, ne pas scanner `docs/` pour proposer une liste.
 document a disparu. Ce fichier suffit — ne pas balayer `docs/rfc/` pour
 le redécouvrir.
 
+**Toute RFC s'ouvre par une section « En clair ».** C'est une convention
+du dépôt, pas une option du mode « vulgarise » : dès que le skill touche
+une RFC qui n'en a pas — une nouvelle arrivée, un document ancien —, il
+l'écrit selon la phase 9, sans attendre qu'on le demande. Le coût est
+nul : à ce moment-là, la RFC vient d'être lue en entier. Le seul cas où
+on s'abstient est un document appartenant à une autre session (modifié
+et non commité) : on le signale au lieu de l'éditer.
+
 ## Principe directeur
 
 Optimiser **qualité du travail / contexte consommé**, pas la quantité
@@ -149,6 +157,10 @@ Aucune modification de code pendant cette phase.
 1. Lire la RFC **une seule fois**, en entier. Les RFC du repo sont en
    format libre : extraire objectif, motivation, décisions, contraintes,
    critères d'acceptation, dépendances et RFC liées où qu'ils soient.
+1bis. Si le document n'ouvre pas sur une section `## En clair`, l'écrire
+   maintenant (phase 9) — c'est le seul moment où la RFC est entièrement
+   en contexte. Une RFC nouvellement arrivée en repart donc toujours
+   vulgarisée.
 2. Identifier le code réellement concerné : Grep sur les classes,
    fichiers, routes ou commandes que la RFC nomme explicitement.
    N'inspecter que ce code, portion par portion.
@@ -301,6 +313,11 @@ après confirmation explicite de l'utilisateur.
    class`), classer, `git mv` vers le sous-dossier correspondant. Un
    fichier modifié ou non commité par une autre session
    (`git status --short`) **ne se déplace jamais** : le signaler.
+   Ces ~10 lignes disent aussi si le document ouvre sur `## En clair`.
+   Ne pas le rédiger ici — cela demanderait de lire chaque RFC en entier,
+   ce que ce mode s'interdit : les lister dans la sortie comme « à
+   vulgariser », et le faire à la prochaine phase 1 qui les ouvrira, ou
+   sur demande.
 2. **`docs/rfc/proposals/`** — relire chacune : son statut a pu changer
    depuis le dernier passage. Une proposition livrée mais restée là est
    une phase 7 oubliée par la session qui l'a traitée : proposer le
@@ -386,8 +403,10 @@ Contraintes de rédaction :
 - Pas de chiffres, seuils ou noms de classe recopiés pour faire sérieux :
   ils appartiennent au corps du document.
 
-En mode "Implémente" ou "Analyse", ne pas déclencher cette phase
-d'office — elle ne se fait que sur demande explicite.
+Cette phase se déclenche **d'office** dès qu'une RFC ouverte par le
+workflow n'a pas encore sa section — voir la règle en tête de document.
+Le mode « vulgarise » sert alors à la refaire quand la première ne
+convient pas, ou à traiter une RFC qu'aucun autre mode n'a ouverte.
 
 ## Gestion de session — CONTEXT WARNING
 

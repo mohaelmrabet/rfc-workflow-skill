@@ -25,6 +25,9 @@ se fait fichier par fichier (`git mv`), jamais par répertoire : d'autres
 sessions écrivent le même repo.
 - Nommage : `RFC-XXXX_slug_descriptif.md`. Format interne libre — pas de
   template imposé, extraire les sections où qu'elles soient.
+- **Une seule section imposée** : toute RFC ouvre sur `## En clair`,
+  juste après le titre. Les 30 documents de `docs/rfc/` en ont une au
+  2026-08-14 ; une RFC qui arrive sans en repart avec.
 - `docs/.rfc-review/` — ledgers du skill rfc-review (pipeline
   d'amélioration du document). Distinct de `docs/.rfc-workflow/` qui
   appartient à ce skill. Ne pas les mélanger.
