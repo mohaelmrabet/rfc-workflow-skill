@@ -1,7 +1,7 @@
 ---
 name: rfc-workflow
-description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Couvre aussi l'inventaire du dossier docs/rfc (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur docs/rfc, ou de rendre une RFC compréhensible en langage courant (ex. "Implémente RFC-0114", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029").
-argument-hint: "[analyse|implémente|review|continue|finalise|rejette|statut|vulgarise] [RFC-XXXX]"
+description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Couvre aussi l'inventaire du dossier docs/rfc (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur docs/rfc, de rendre une RFC compréhensible en langage courant, ou d'AUDITER une RFC déclarée livrée pour vérifier qu'elle l'est vraiment — livrables présents, mécanismes confrontés aux données réelles du dépôt, faux « OK » débusqués (ex. "Implémente RFC-0114", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029", "Audite RFC-0029").
+argument-hint: "[analyse|implémente|review|audite|continue|finalise|rejette|statut|vulgarise] [RFC-XXXX]"
 allowed-tools: [Read, Edit, Write, Bash, Grep, Glob]
 ---
 
@@ -27,6 +27,18 @@ on s'abstient est un document appartenant à une autre session (modifié
 et non commité) : on le signale au lieu de l'éditer.
 
 ## Principe directeur
+
+**Architecture Restraint d'abord** (`CLAUDE.md`, ADR-0038). Dans tous les
+modes : la solution la plus simple qui satisfait l'exigence gagne ; une
+complexité supplémentaire — Event Bus, Outbox, Queue, worker, distributed
+lock, cleanup d'orphelins, nouvelle couche, nouvelle base — n'entre dans le
+chemin d'implémentation qu'avec une preuve (bug existant, test qui échoue,
+invariant, contrainte explicite). Sans preuve : `Future Work`, et
+l'implémentation continue. Chaque problème relevé est classé `REQUIRED` /
+`RECOMMENDED` / `OPTIONAL` / `FUTURE` ; seul `REQUIRED` bloque. Quand les
+exigences sont satisfaites, les invariants préservés, les risques critiques
+couverts et les tests définis : **STOP**, on ne cherche pas de problèmes
+hypothétiques supplémentaires.
 
 Optimiser **qualité du travail / contexte consommé**, pas la quantité
 d'analyse. Avant toute opération coûteuse (lecture d'un gros fichier,
@@ -68,6 +80,97 @@ un conteneur, retag d'image…) — jamais un chantier d'infra. Si la
 preuve reste impossible : état BLOCKED + blocage documenté. Ne jamais
 élargir le périmètre de la RFC pour corriger un problème indépendant.
 
+## Une RFC, une responsabilité (SOLID appliqué aux documents)
+
+Un document d'architecture obéit aux mêmes règles que le code qu'il
+décrit. Une RFC qui traite beaucoup de choses est un God Object en
+Markdown : personne ne la relit en entier, ses sections divergent, et
+elle devient impossible à implémenter par lots ou à classer, puisqu'une
+partie est livrée pendant qu'une autre reste théorique.
+
+**Test d'appartenance, à appliquer avant d'écrire.** Énoncer ce que fait
+la RFC en **une phrase sans « et »**. Si la phrase a besoin d'un « et »,
+d'un « ainsi que » ou d'un « & » dans le titre, il y a deux RFC.
+
+Formulé autrement, en SRP : *combien de raisons distinctes cette RFC
+a-t-elle de changer ?* Plus d'une → découper. Le modèle de données
+change pour des raisons sémantiques, le chemin d'écriture pour des
+raisons d'ingestion, le chemin de lecture pour des raisons
+d'assemblage : trois horloges différentes, trois documents.
+
+**Signaux de découpe** — aucun ne tranche seul, leur cumul si :
+
+- le titre contient « & », « et », une virgule d'énumération ;
+- plus d'une dizaine de sections de fond, hors annexes ;
+- deux sections décrivent des composants qu'aucune livraison commune ne
+  relie ;
+- l'ordre d'implémentation interne comporte des étapes qui pourraient
+  sortir seules et être testées seules ;
+- une partie est livrée et l'autre non : la RFC ne peut alors ni être
+  classée `implemented`, ni rester `proposed` honnêtement.
+
+**Garde-fou inverse, tout aussi important.** Ne pas fragmenter pour
+faire joli : chaque RFC issue d'un découpage doit être **livrable et
+testable seule**. Si deux documents doivent obligatoirement être
+implémentés dans le même commit pour que quoi que ce soit fonctionne,
+c'est une seule RFC. Le découpage suit les coutures réelles du système,
+pas la symétrie du plan (ADR-0038, règle 3).
+
+**Quand on découpe**, appliquer « Frontières entre RFC » ci-dessous :
+frontière énonçable en une phrase, `Non-goals` nommant le responsable,
+dépendances qualifiées bloquantes ou facultatives, et vocabulaire aligné
+sur le document le plus ancien.
+
+## Frontières entre RFC (anti-chevauchement)
+
+Deux documents qui décrivent le même contrat, c'est un contrat qui
+n'existe nulle part : chacun suppose que l'autre fait foi, les noms
+divergent, et l'implémentation n'a plus de référence. Le coût se paie
+tard, quand un composant est écrit deux fois sous deux vocabulaires.
+
+**Déclencheur.** Dès qu'on écrit une RFC nouvelle, qu'on en révise une,
+ou qu'on s'apprête à en rejeter une comme « déjà couverte », faire ce
+qui suit — c'est peu coûteux et ça ne se rattrape pas après coup.
+
+1. **Recenser le voisinage.** Grep sur le domaine (`mémoire`, `intent`,
+   `pipeline`…) dans `docs/rfc/*/` et dans `REGISTRY.md`. Le registre
+   suffit à repérer les voisines ; il ne suffit pas à savoir ce
+   qu'elles contiennent.
+2. **Lire les voisines en entier, pas leur en-tête.** Une RFC se juge
+   sur ses sections, pas sur son titre ni sur son « En clair » : c'est
+   au milieu du document que se cachent les contrats dupliqués. Lire
+   les 40 premières lignes et la table des matières ne suffit pas — les
+   doublons vivent dans les sections tardives, celles qui descendent au
+   niveau des interfaces.
+3. **Produire une table de correspondance, décision par décision**, et
+   la vérifier **dans les deux sens** : ce que le document reprend de
+   l'autre, et ce que l'autre couvrait déjà sans qu'on le sache. Une
+   décision orpheline, repérée dans ce passage, est exactement ce qui
+   se perd quand on absorbe sur un résumé.
+4. **Trancher la frontière par une phrase**, écrite dans les deux
+   documents. Une frontière énonçable tient ; une frontière qui demande
+   un paragraphe ne tient pas. Exemple éprouvé : *la mécanique
+   opérationnelle appartient au RFC du chemin, la décision périodique
+   au RFC de l'élection.*
+5. **Les noms antérieurs gagnent.** Si deux documents nomment
+   différemment la même opération, le document le plus ancien fixe le
+   vocabulaire et le plus récent s'aligne — sans exception, y compris
+   quand le nom récent semble meilleur. Deux noms pour une opération
+   coûtent plus cher qu'un nom imparfait.
+6. **Écrire un « Non-goals » qui nomme le responsable**, pas un simple
+   « hors périmètre » : chaque ligne cite la RFC qui prend le relais.
+   Et pour les documents à forte frontière, une section normative
+   « Ce que ce RFC ne doit PAS faire ».
+7. **Tracer les dépendances** : un diagramme et une table qui
+   qualifient chaque lien de **bloquant** ou **facultatif**. Une
+   dépendance non qualifiée devient un prérequis découvert au moment de
+   l'implémentation.
+
+**Une RFC ne se rejette jamais comme « déjà couverte » sans cette
+table.** Le cas qui a fondé cette règle : RFC-0051 absorbée par
+RFC-0056 et RFC-0060, où l'oubli explicite de l'utilisateur n'était en
+réalité couvert par aucune des deux au moment du rejet.
+
 ## Localiser une RFC
 
 Un seul Glob : `docs/rfc/*/RFC-XXXX_*.md`. Ne rien lire d'autre.
@@ -105,9 +208,15 @@ plus `BLOCKED` et `REJECTED`, accessibles depuis n'importe quel état.
   commit (voir « Pré-commit »).
 - **DONE** — commité et prouvé.
 - **REJECTED** — la proposition ne sera pas implémentée, et **on sait
-  pourquoi avec des chiffres**. Réservé à une hypothèse mesurée puis
-  infirmée, jamais à un abandon par lassitude ou par manque de temps :
-  sans mesure, l'état reste BLOCKED. Voir « Phase 7 ».
+  pourquoi**. Deux formes recevables, et deux seulement :
+  - *infirmée* — hypothèse mesurée puis démentie, avec les chiffres
+    contre la baseline en service ;
+  - *absorbée* — le contenu est repris par d'autres RFC, avec la table
+    de correspondance décision par décision qui le prouve (voir
+    « Frontières entre RFC »).
+
+  Un abandon par lassitude ou par manque de temps n'en est pas un :
+  sans mesure ni table, l'état reste BLOCKED. Voir « Phase 7 ».
 - **FILED** — document classé dans `docs/rfc/implemented/` ou
   `docs/rfc/rejected/`. Une RFC n'est finie que classée.
 
@@ -129,6 +238,7 @@ Un seul point manquant → l'état reste TESTING (ou BLOCKED), jamais DONE.
 | "Analyse RFC-XXXX" | 1 uniquement — aucune modification de code |
 | "Implémente RFC-XXXX" | 1 → 2 → 3 → 4 → 5 → 6 → 7 |
 | "Review RFC-XXXX" | 4 (+ 5 si critères vérifiables) — aucune modification sauf demande explicite |
+| "Audite RFC-XXXX" / "RFC-XXXX est-elle vraiment implémentée ?" | 10 uniquement — aucune écriture, ni code ni document ; produit un verdict et des gaps |
 | "Continue RFC-XXXX" | 0, puis reprise à la phase indiquée par le handoff |
 | "Finalise RFC-XXXX" | 3 → 4 → 5 → 6 → 7 |
 | "Rejette RFC-XXXX" | prototype + mesure, puis 7 — jamais de rejet sans chiffres |
@@ -270,11 +380,28 @@ travail s'interrompt avant la fin.
 Dernier geste du travail, jamais optionnel. `git mv` fichier par
 fichier — d'autres sessions écrivent le même repo.
 
-**Mettre à jour `docs/rfc/REGISTRY.md`** dans le même commit : ligne de
-la RFC (statut, nouveau chemin) et « prochain numéro libre ». Le
-registre est la source des numéros ; c'est faute de l'avoir consulté
-qu'une proposition a été numérotée RFC-0022 alors que le numéro était
-pris, le 2026-08-13.
+**Mettre à jour `docs/rfc/REGISTRY.md` et le registre ADR (`docs/adr/`)** dans le même commit :
+- Mettre à jour la ligne de la RFC (statut, nouveau chemin) et « prochain numéro libre » dans `REGISTRY.md`.
+- Si la RFC introduit ou valide une décision structurante d'architecture (choix de composant, pattern d'élection, modèle d'apprentissage, etc.), **créer ou mettre à jour un ADR synthétique** dans `docs/adr/ADR-XXXX-nom.md` et enregistrer sa ligne dans `docs/adr/README.md`.
+
+**Vérifier les README, dans le même commit.** Une RFC livrée périme
+souvent la documentation d'accueil, et personne ne s'en aperçoit avant
+qu'elle mente depuis dix RFC — `README.md` a décrit « aucune
+fonctionnalité métier implémentée » jusqu'à RFC-0028, et
+`docs/architecture/README.md` décrivait encore le pipeline du vertical
+slice RFC-0002. Se poser trois questions, et n'écrire que si la réponse
+est oui :
+
+1. l'état annoncé (« ce qui est en place / pas encore ») a-t-il changé ?
+2. un schéma, un pipeline, une cascade, une liste de services ou
+   d'endpoints décrits ailleurs ne correspond-il plus au code ?
+3. la RFC ajoute-t-elle une commande, une variable d'environnement ou
+   une étape d'exploitation qu'un nouvel arrivant doit connaître ?
+
+Si rien n'a bougé, ne pas toucher aux README : le bruit documentaire
+coûte autant que le mensonge. Décrire le code tel qu'il est **câblé en
+production**, pas tel que la RFC l'espérait — un étage prévu mais passé
+à `null` dans le wiring se signale comme non monté.
 
 **Implémentée** → `docs/rfc/implemented/`. Ajouter en tête du document :
 statut, date, et les commits qui la livrent. Le handoff et l'analyse de
@@ -295,6 +422,21 @@ que le document de décision ne contient pas.
 Une hypothèse falsifiée avec des chiffres est un acquis : elle empêche
 de reproposer la même piste sans savoir ce qu'elle coûte. La supprimer
 efface ce travail. `RFC-0023-tripartite-measurement.md` sert de modèle.
+
+**Rejet par absorption** — même dossier, même exigence de conservation,
+mais les points 2 à 4 sont remplacés par :
+
+2'. la **table de correspondance** : chaque décision et chaque critère
+    d'acceptation d'origine, en face de la RFC qui le reprend et de la
+    section précise où il atterrit ;
+3'. ce que l'inventaire a révélé, en particulier toute décision
+    orpheline — celle que personne ne reprenait et qu'on aurait
+    supprimée sans le savoir ;
+4'. la frontière retenue entre les documents qui héritent, en une
+    phrase.
+
+Une absorption sans table n'est pas un rejet, c'est une perte.
+`RFC-0051_memory_consolidation_and_reconciliation.md` sert de modèle.
 
 Le rejet appartient à l'utilisateur. Le rôle du skill est de **mesurer
 avant de conclure** : prototyper contre le harnais d'évaluation existant,
@@ -330,6 +472,11 @@ après confirmation explicite de l'utilisateur.
    déplacements constatés et que « prochain numéro libre » est juste.
    C'est le seul fichier qu'un auteur de RFC a besoin de lire pour
    numéroter.
+4ter. **`README.md` et `docs/architecture/README.md`** — lecture rapide :
+   l'état annoncé cite-t-il encore une RFC dépassée, un composant
+   remplacé, un lien vers un dossier qui n'existe plus ? Le signaler
+   dans la sortie comme dette documentaire, sans réécrire ici (c'est la
+   phase 7 qui écrit).
 5. **Ne jamais conclure « implémentée » sur la foi du document.** Si le
    `Status` ne cite pas de sha, chercher dans
    `git log --oneline --all -- docs/rfc/*/RFC-XXXX*` et dans les commits
@@ -407,6 +554,54 @@ Cette phase se déclenche **d'office** dès qu'une RFC ouverte par le
 workflow n'a pas encore sa section — voir la règle en tête de document.
 Le mode « vulgarise » sert alors à la refaire quand la première ne
 convient pas, ou à traiter une RFC qu'aucun autre mode n'a ouverte.
+
+## Phase 10 — Audit d'une RFC déclarée livrée
+
+Vérifier qu'une RFC annoncée implémentée l'est réellement. La phase 4
+relit un diff qu'on vient d'écrire ; celle-ci instruit une livraison dont
+on ne sait rien, souvent faite par une autre session ou un autre outil.
+Elle n'écrit rien — ni code, ni document, ni classement — et se termine
+sur un verdict et une liste de gaps que l'utilisateur arbitre.
+
+1. **Ne rien croire sur parole.** Un statut « implémentée », une ligne de
+   registre et un handoff triomphal sont des affirmations, pas des
+   preuves. Chercher la livraison réelle : `git log --grep="RFC-XXXX"`,
+   et `git status` — du code non commité peut porter la livraison, et
+   c'est justement là que personne n'a relu.
+2. Lire la RFC une fois, en extraire la **liste fermée** des livrables et
+   des décisions vérifiables. Si la RFC est découpée en phases, n'auditer
+   que la phase déclarée livrée, et dire des autres qu'elles sont hors
+   audit plutôt que de les compter en échec.
+3. Pour chaque livrable, localiser le symbole annoncé (Grep ciblé) et
+   trancher entre trois issues, jamais deux : **absent**, **présent et
+   juste**, **présent et faux**. La troisième est la seule qui coûte cher
+   à découvrir tard.
+4. **Confronter chaque mécanisme aux données réelles du dépôt, pas à ses
+   fixtures.** C'est la règle qui trouve tout : un test qui fabrique ses
+   propres cas prouve que le code s'exécute, jamais qu'il mesure quelque
+   chose. Toute valeur sentinelle, tout nom de catégorie, toute clé codée
+   dans le mécanisme doit exister dans le corpus, la config ou le schéma
+   réels — un grep sur le jeu de données suffit à le savoir.
+5. **Chasser les faux « OK »** : branche vide qui rend un succès (`return
+   1.0` sur zéro cas observé), catégorie inconnue notée zéro, statut codé
+   en dur, assertion qui ne dérive pas du résultat qu'elle prétend
+   vérifier. Un instrument faux est plus dangereux qu'un instrument
+   absent : il rassure.
+6. Rejouer les preuves citées, et **classer les échecs avant de les
+   attribuer** : reproduire sur un worktree de `HEAD` (`git worktree add`,
+   `vendor` en lien symbolique) avant d'accuser le travail audité. Un
+   échec qui préexiste est UNRELATED et va en Follow-up, jamais dans le
+   verdict.
+7. **Sortie** : un tableau — livrable | attendu par la RFC | constaté
+   (`fichier:ligne` ou commande + résultat) | verdict PASS / PARTIAL /
+   ABSENT / FAUX | gravité P0-P3 — puis un verdict global en une phrase,
+   puis ce qu'il faudrait faire.
+8. Ne corriger **rien** sans go explicite. Sur go, l'audit devient
+   l'analyse de gaps de la phase 1 et le travail reprend en mode
+   « implémente » à partir de l'état réel du repo.
+
+Un audit qui ne trouve rien est un résultat : le dire en une ligne, avec
+les preuves rejouées, et s'arrêter là.
 
 ## Gestion de session — CONTEXT WARNING
 

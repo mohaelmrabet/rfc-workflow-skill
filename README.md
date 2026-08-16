@@ -34,6 +34,7 @@ Le skill se déclenche sur l'intention, ou explicitement via `/rfc-workflow`.
 | « Analyse RFC-0114 » | 1 — aucune modification de code |
 | « Implémente RFC-0114 » | 1 → 7 |
 | « Review RFC-0114 » | 4 (+ 5 si critères vérifiables) |
+| « Audite RFC-0114 » | 10 — la livraison annoncée existe-t-elle vraiment ? |
 | « Continue RFC-0114 » | reprise au checkpoint du handoff |
 | « Finalise RFC-0114 » | 3 → 7 |
 | « Rejette RFC-0114 » | prototype + mesure, puis classement |

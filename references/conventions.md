@@ -63,12 +63,14 @@ l'introduction de `implemented/` : on déplace, on ne supprime plus.
 
 ## Code et tests
 
-- Backend : `php-backend/` (src/, tests/, config/capabilities/).
-- Tests : depuis `php-backend/`, `vendor/bin/phpunit tests/<chemin>` —
-  toujours cibler un fichier ou un répertoire, jamais la suite entière
-  par défaut.
-- Vérifier la contrainte PHP de `php-backend/composer.json` avant toute
-  syntaxe dépendante de version.
+- Le backend est à la racine du repo : `apps/`, `packages/`, `config/`,
+  `tests/`. Règle de dépendance : `apps → packages/agent → packages/sdk`.
+- Tests : depuis la racine, `vendor/bin/phpunit tests/<chemin>` — toujours
+  cibler un fichier ou un répertoire, jamais la suite entière par défaut.
+  Les cibles agrégées sont dans le `Makefile` et les scripts `composer`.
+- Vérifier la contrainte PHP de `composer.json` avant toute syntaxe
+  dépendante de version (le PHP de l'hôte et celui des conteneurs
+  peuvent différer).
 - Comments/docblocks : anglais, 1-4 lignes max (cf. CLAUDE.md) ; le
   narratif détaillé va dans le message de commit.
 - Certains fichiers (ex. config/capabilities côté runtime, vendor créés
