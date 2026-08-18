@@ -36,11 +36,34 @@ documents, jamais un statut.
 |---|---|---|
 | `next_number` | ligne « prochain numéro libre » du registre | `gh issue list --label rfc --state all --json title --limit 500`, max des `RFC-XXXX` du titre, + 1 |
 | `read_status` | ligne de la RFC dans le registre | `gh issue list --search "RFC-XXXX in:title" --state all --json number,title,labels,state` |
-| `set_status` | éditer la ligne du registre **et** `git mv` le document | `gh issue edit N --add-label state:… --remove-label state:…` ; au classement, `gh issue close N` **et** `git mv` le document |
+| `set_status` | éditer la ligne du registre, l'en-tête du document, **et** `git mv` au classement | `gh issue edit N --add-label state:… --remove-label state:…` ; au classement, `gh issue close N` **et** `git mv` le document |
 | `list_all` | lire le registre en entier | `gh issue list --label rfc --state all --json number,title,labels,state --limit 500` |
 | `save_handoff` | écrire `<work>/RFC-XXXX-handoff.md` | `gh issue comment N --body-file <fichier temporaire>` |
 | `read_handoff` | lire `<work>/RFC-XXXX-handoff.md` | `gh issue view N --comments`, prendre le **dernier** bloc `## Handoff` |
 | `add_debt` | une ligne dans `<debt>` | `gh issue create --label dette --title "…" --body "Origine : RFC-XXXX"` |
+
+### Quand `set_status` s'appelle, et où il écrit
+
+**À chaque transition d'état, pas seulement au classement.** Un suivi qui
+ne bouge qu'à la fin ne suit rien : pendant les heures où le travail a
+lieu, il affiche `proposée` sur une RFC qu'on est en train d'écrire, et
+celui qui regarde le tableau n'y voit rien venir.
+
+Le statut s'affiche à trois endroits, et `set_status` les écrit **tous
+les trois dans le même geste** :
+
+| Où | Quoi |
+|---|---|
+| le suivi (`tracker`) | la ligne du registre, ou le label de l'issue — la **source** |
+| l'en-tête du document RFC | le champ `**Statut**`, que lit quiconque ouvre le document |
+| le miroir, s'il existe | `mirror_push` |
+
+Un statut à jour ici et périmé là est un mensonge à retardement : le
+lecteur croit le premier endroit qu'il ouvre. Les trois bougent ensemble,
+ou l'opération n'est pas finie.
+
+Le handoff suit la même règle : `save_handoff` à chaque fin de séance,
+pas seulement à la dernière — c'est lui qui raconte *où on en est*.
 
 ## Les états, traduits
 
