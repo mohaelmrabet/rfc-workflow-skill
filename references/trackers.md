@@ -84,11 +84,30 @@ elle diverge, on l'écrase depuis le tracker sans rien perdre. C'est ce
 qui permet d'essayer un système en vraie grandeur — le voir vivre sur ses
 propres données — sans lui remettre l'état du projet.
 
-Une opération de plus, appelée après `set_status` et jamais avant :
+Deux opérations de plus. La première installe, une fois ; la seconde
+projette, après chaque `set_status` et jamais avant :
 
 | Opération | `mirror: github` |
 |---|---|
+| `mirror_setup` | crée ce qui manque, et rien d'autre : les labels (`rfc`, `dette`, `living`, `future`, `state:*`), le projet (`gh project create --owner <compte> --title <projet>`) et sa vue tableau, puis y verse les issues ouvertes (`gh project item-add`). **Idempotente** : ce qui existe est laissé tel quel |
 | `mirror_push` | l'issue existe (`gh issue list --search "RFC-XXXX in:title"`) → `gh issue edit` ses labels ; sinon `gh issue create`. Au classement, `gh issue close`. **Idempotente** : relancer ne duplique rien |
+
+`mirror_setup` demande le scope `project` sur le jeton, que `gh` n'accorde
+pas par défaut. S'il manque, le dire et demander `gh auth refresh -s
+project` — cette commande est interactive, elle appartient à l'utilisateur.
+Le reste du miroir fonctionne sans ce scope : seul le tableau en dépend.
+
+**Créer le tableau n'est pas le piloter.** `mirror_setup` l'installe une
+fois ; ensuite les colonnes viennent du *group by* sur les labels, que le
+board applique lui-même. Le skill n'écrit jamais dans un champ de projet —
+il écrirait le même état à deux endroits, et le second finirait par mentir.
+
+**Ce que le corps d'une issue contient** : le lien vers le document, son
+statut, puis le document lui-même — c'est ce qu'on vient lire. Au-delà de
+la taille maximale d'une issue, tronquer et renvoyer au fichier. Rien
+d'autre : une note qui explique au lecteur le fonctionnement interne du
+miroir occupe la place la plus visible de chaque carte pour ne rien lui
+apprendre. Un pied de page suffit à dire où se fait la modification.
 
 Un échec du miroir ne bloque **jamais** le travail : le signaler et
 continuer. L'inverse ferait dépendre le dépôt d'un service distant pour
@@ -112,8 +131,38 @@ en sache rien. Piloter Projects v2 demanderait les identifiants opaques
 de ses champs, projet par projet — de la configuration en échange
 d'aucune capacité nouvelle.
 
+### Les labels, et pourquoi une lettre ne suffit pas
+
+Dans un document, `D-8` vit sous un titre de section qui l'explique. Dans
+une liste d'issues, la lettre est nue et ne dit rien à personne. Chaque
+rubrique porte donc un label, qui devient aussi une colonne du tableau :
+
+| Préfixe | Label | Rubrique |
+|---|---|---|
+| `B-` | `bug` | bugs actifs |
+| `M-` | `instrument-faux` | mesures qui rassurent à tort |
+| `S-` | `frontiere-sdk` | frontière SDK, code mort, vocabulaire |
+| `A-` | `analyse-statique` | PHPStan et tests d'architecture |
+| `E-` | `exploitation` | migrations, purges, environnement |
+| `D-` | `a-arbitrer` | questions ouvertes |
+
+Règle générale : **tout ce qu'un document rend lisible par sa structure —
+section, colonne, position — doit devenir un label en le projetant.** Une
+projection qui garde le code sans le contexte qui le décode est illisible.
+
+### Les vues du tableau
+
+Un projet porte plusieurs vues, chacune avec son filtre et son *group by* :
+une par nature de travail, plutôt qu'un board unique où tout se mélange.
+
+| Vue | Filtre | Group by |
+|---|---|---|
+| RFC | `is:open label:rfc` | `state:*` |
+| Dette | `is:open label:dette` | rubrique |
+| Bugs | `is:open label:bug` | — |
+
 Prérequis, à vérifier une seule fois : `gh auth status` répond, et les
-labels `rfc`, `dette`, `state:*` existent (`gh label create`). Si `gh`
+labels ci-dessus existent (`gh label create`). Si `gh`
 manque ou n'est pas authentifié, le dire et s'arrêter — ne jamais
 retomber silencieusement sur `files`, ce serait écrire le statut à un
 endroit que personne ne lit.
