@@ -1,24 +1,40 @@
-# Conventions du repo utiles à rfc-workflow
+# Conventions de méthode de rfc-workflow
 
 À lire une seule fois par session. Ne pas redécouvrir ces faits par
 exploration.
+
+Ce fichier ne contient que de la **méthode**, valable sur n'importe quel
+projet. Les chemins, la commande de test et l'emplacement du suivi
+appartiennent à `.rfc-workflow.yml` du projet ; leur traduction en
+opérations est dans `trackers.md`. Rien de spécifique à un dépôt n'a sa
+place ici — c'est ce qui rendait ce skill inutilisable ailleurs.
 
 ## Emplacement et cycle de vie des RFC
 
 Une RFC finit toujours classée dans l'un de ces dossiers — c'est le
 dernier geste du travail, pas un rangement optionnel :
 
-- `docs/rfc/proposals/` — propositions à implémenter, tant qu'elles le sont.
-- `docs/rfc/implemented/` — **implémentée et prouvée**. Le document y est
+- `<rfc>/proposed/` — propositions à implémenter, tant qu'elles le sont.
+- `<rfc>/implemented/` — **implémentée et prouvée**. Le document y est
   déplacé (`git mv`), il n'est plus supprimé : le repo garde la décision
   et ses critères d'acceptation lisibles sans fouiller git.
-- `docs/rfc/rejected/` — **proposition écartée**, avec dans le même
+- `<rfc>/rejected/` — **proposition écartée**, avec dans le même
   fichier la raison qui l'écarte. Une RFC rejetée sur mesure vaut d'être
   conservée : elle empêche de reproposer la même piste sans savoir ce
   qu'elle a coûté. Voir `RFC-0023-tripartite-measurement.md`, qui réunit
   la proposition, le prototype, les chiffres et les enseignements.
-- `docs/rfc/living/` — documents vivants/postmortems : restent.
-- `docs/rfc/blocked/` — bloquées : ne pas implémenter sans déblocage.
+- `<rfc>/living/` — documents vivants/postmortems : restent.
+- `<rfc>/future/` — **sans chemin d'implémentation**, en attente d'un
+  déclencheur nommé. Différent de `blocked/` : rien n'empêche de l'écrire,
+  c'est le besoin qui n'existe pas encore. Une telle RFC porte une section
+  listant les déclencheurs vérifiables qui la rouvrent, et un critère de
+  sortie. Ne jamais l'implémenter « tant qu'on y est » : la laisser dormir
+  est le résultat attendu (Architecture Restraint, règle 2). Modèle dans
+  Concio : `RFC-0071_attachment_content_scanning.md`.
+
+Ces cinq dossiers sont les seuls. Il n'y a ni `proposals/`, ni
+`blocked/`, ni RFC à plat : balayer un dossier inexistant donne un mode
+statut qui ne trouve jamais rien et qui rassure à tort.
 
 Les dossiers absents se créent au moment du classement. Le déplacement
 se fait fichier par fichier (`git mv`), jamais par répertoire : d'autres
@@ -26,11 +42,10 @@ sessions écrivent le même repo.
 - Nommage : `RFC-XXXX_slug_descriptif.md`. Format interne libre — pas de
   template imposé, extraire les sections où qu'elles soient.
 - **Une seule section imposée** : toute RFC ouvre sur `## En clair`,
-  juste après le titre. Les 30 documents de `docs/rfc/` en ont une au
-  2026-08-14 ; une RFC qui arrive sans en repart avec.
+  juste après le titre. Une RFC qui arrive sans en repart avec.
 - `docs/.rfc-review/` — ledgers du skill rfc-review (pipeline
-  d'amélioration du document). Distinct de `docs/.rfc-workflow/` qui
-  appartient à ce skill. Ne pas les mélanger.
+  d'amélioration du document). Distinct de `<work>` qui appartient à ce
+  skill. Ne pas les mélanger.
 
 ## Reconnaître la catégorie d'un document
 
@@ -44,7 +59,7 @@ document entier :
 - **Postmortem permanent** — une ligne `Document class` dit que le
   document vaut comme archive indépendamment du code. → `living/`
 - **Proposition classique** — aucun de ces signaux. C'est la seule
-  catégorie qui transite par `proposals/` puis `implemented/` ou
+  catégorie qui transite par `proposed/` puis `implemented/` ou
   `rejected/`.
 
 Cette typologie vient de l'ex-skill `rfc-status`. Sa règle d'origine —
@@ -61,26 +76,9 @@ l'introduction de `implemented/` : on déplace, on ne supprime plus.
   document que pour y insérer la section « En clair » (mode
   « vulgarise ») ; toute autre réécriture appartient à `rfc-review`.
 
-## Code et tests
+## Ce que ce fichier ne dit pas
 
-- Le backend est à la racine du repo : `apps/`, `packages/`, `config/`,
-  `tests/`. Règle de dépendance : `apps → packages/agent → packages/sdk`.
-- Tests : depuis la racine, `vendor/bin/phpunit tests/<chemin>` — toujours
-  cibler un fichier ou un répertoire, jamais la suite entière par défaut.
-  Les cibles agrégées sont dans le `Makefile` et les scripts `composer`.
-- Vérifier la contrainte PHP de `composer.json` avant toute syntaxe
-  dépendante de version (le PHP de l'hôte et celui des conteneurs
-  peuvent différer).
-- Comments/docblocks : anglais, 1-4 lignes max (cf. CLAUDE.md) ; le
-  narratif détaillé va dans le message de commit.
-- Certains fichiers (ex. config/capabilities côté runtime, vendor créés
-  par Docker) peuvent appartenir à root — si un write échoue en
-  permission denied, passer par `docker exec`/`docker cp` plutôt que
-  sudo.
-
-## Git
-
-- Branche principale : `main`. Commits en anglais, format
-  conventionnel (`feat(...)`, `fix(...)`), sans trailer Co-Authored-By.
-- D'autres sessions peuvent avoir des modifications non commitées :
-  vérifier `git status` avant d'attribuer un diff à la RFC courante.
+Les conventions de code, de tests et de Git appartiennent au projet, pas
+au skill : elles sont dans son `agent.md` / `CLAUDE.md`, et la commande
+de test ciblé dans `.rfc-workflow.yml`. Un skill qui les recopie devient
+faux dès le deuxième projet.

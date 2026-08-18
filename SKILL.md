@@ -1,22 +1,27 @@
 ---
 name: rfc-workflow
-description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Couvre aussi l'inventaire du dossier docs/rfc (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur docs/rfc, de rendre une RFC compréhensible en langage courant, ou d'AUDITER une RFC déclarée livrée pour vérifier qu'elle l'est vraiment — livrables présents, mécanismes confrontés aux données réelles du dépôt, faux « OK » débusqués (ex. "Implémente RFC-0114", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029", "Audite RFC-0029").
+description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Générique et réutilisable sur n'importe quel projet : les chemins, la commande de test et l'emplacement du suivi (fichiers versionnés ou issues GitHub) sont déclarés par un `.rfc-workflow.yml` à la racine du projet, jamais codés dans le skill. Couvre aussi l'inventaire des RFC (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur les RFC, de rendre une RFC compréhensible en langage courant, ou d'AUDITER une RFC déclarée livrée pour vérifier qu'elle l'est vraiment — livrables présents, mécanismes confrontés aux données réelles du dépôt, faux « OK » débusqués (ex. "Implémente RFC-0092", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029", "Audite RFC-0029").
 argument-hint: "[analyse|implémente|review|audite|continue|finalise|rejette|statut|vulgarise] [RFC-XXXX]"
 allowed-tools: [Read, Edit, Write, Bash, Grep, Glob]
 ---
 
 # RFC Workflow
 
-V1.1 — durci avec les enseignements de RFC-0114 : machine d'états,
-preuve réelle obligatoire, classification des problèmes, pré-commit.
+V1.3 — machine d'états, preuve réelle obligatoire, classification des
+problèmes, pré-commit ; révisé le 2026-08-18 par l'audit documentaire
+(sort des fichiers de travail, cible de la checklist de classement,
+dossiers réellement balayés par le mode statut), puis rendu **générique**
+le même jour : la méthode reste ici, les données du projet passent dans
+`.rfc-workflow.yml`, et le suivi d'état s'adresse par sept opérations
+(`references/trackers.md`) au lieu de chemins en dur.
 
 Cible : `$ARGUMENTS`. Si le mode ou le numéro de RFC manque, demander —
 ne pas deviner, ne pas scanner `docs/` pour proposer une liste.
 
-**Numéroter une nouvelle RFC** : lire `docs/rfc/REGISTRY.md`, prendre le
-« prochain numéro libre », ne jamais réutiliser un numéro même si son
-document a disparu. Ce fichier suffit — ne pas balayer `docs/rfc/` pour
-le redécouvrir.
+**Numéroter une nouvelle RFC** : opération `next_number` (voir
+`references/trackers.md`), ne jamais réutiliser un numéro même si son
+document a disparu. Cette seule opération suffit — ne pas balayer
+`<rfc>/` pour le redécouvrir.
 
 **Toute RFC s'ouvre par une section « En clair ».** C'est une convention
 du dépôt, pas une option du mode « vulgarise » : dès que le skill touche
@@ -133,7 +138,7 @@ ou qu'on s'apprête à en rejeter une comme « déjà couverte », faire ce
 qui suit — c'est peu coûteux et ça ne se rattrape pas après coup.
 
 1. **Recenser le voisinage.** Grep sur le domaine (`mémoire`, `intent`,
-   `pipeline`…) dans `docs/rfc/*/` et dans `REGISTRY.md`. Le registre
+   `pipeline`…) dans `<rfc>/*/` et par `list_all`. Le suivi
    suffit à repérer les voisines ; il ne suffit pas à savoir ce
    qu'elles contiennent.
 2. **Lire les voisines en entier, pas leur en-tête.** Une RFC se juge
@@ -171,23 +176,68 @@ table.** Le cas qui a fondé cette règle : RFC-0051 absorbée par
 RFC-0056 et RFC-0060, où l'oubli explicite de l'utilisateur n'était en
 réalité couvert par aucune des deux au moment du rejet.
 
+## Configuration du projet
+
+Le skill porte la méthode ; **les données du projet vivent dans le
+projet**. Premier geste de toute session : `cat .rfc-workflow.yml` à la
+racine. Il déclare où vit le suivi (`tracker: files` ou `github`), les
+chemins et la commande de test. **Absent, c'est un cas normal** :
+appliquer les défauts de `references/trackers.md` et continuer sans le
+signaler.
+
+Dans tout ce document, `<rfc>`, `<work>`, `<debt>`, `<evidence>` et
+`<adr>` désignent les chemins de cette configuration. Le suivi d'état ne
+se touche que par les opérations `next_number`, `read_status`,
+`set_status`, `list_all`, `save_handoff` / `read_handoff` et `add_debt`,
+définies une fois pour toutes dans `references/trackers.md`. Une phase
+qui écrirait un chemin de registre en dur casserait le skill sur le
+projet suivant — c'est la seule règle que la généricité ajoute.
+
 ## Localiser une RFC
 
-Un seul Glob : `docs/rfc/*/RFC-XXXX_*.md`. Ne rien lire d'autre.
-Les conventions du repo (sens des sous-dossiers, suppression des
-propositions implémentées, commandes de test) sont dans
-`references/conventions.md` — le lire une seule fois par session.
+Un seul Glob : `<rfc>/*/RFC-XXXX_*.md`. Ne rien lire d'autre.
+Les conventions de méthode (sens des sous-dossiers, typologie des
+documents, skills voisins) sont dans `references/conventions.md` — le
+lire une seule fois par session.
 
 ## État persistant (reprise entre sessions)
 
-Tout l'état vit dans `docs/.rfc-workflow/` :
+En `tracker: files`, tout l'état de travail vit dans `<work>` ; en
+`tracker: github`, le handoff est un commentaire de l'issue et le reste
+demeure local :
 
-- `RFC-XXXX-analysis.md` — produit de la phase d'analyse.
+- `RFC-XXXX-analysis.md` — produit de la phase d'analyse. Il **porte le
+  plan** dans sa section `Implementation Plan` : ne pas écrire de
+  `RFC-XXXX-plan.md` à côté. Le dépôt en compte huit pour cinquante-quatre
+  analyses, tous doublons d'une section qui existait déjà — la règle
+  « deux documents pour un contrat, c'est un contrat qui n'existe nulle
+  part » vaut aussi pour les fichiers de travail.
 - `RFC-XXXX-handoff.md` — handoff compact (≤ ~1000 tokens), réécrit à
-  chaque fin de séance de travail sur la RFC.
+  chaque fin de séance de travail sur la RFC. Écrit et relu par
+  `save_handoff` / `read_handoff`, jamais par un chemin en dur.
+- `RFC-XXXX-measurement.md` et `RFC-XXXX-scripts/` — instruments et
+  chiffres, quand la RFC en produit.
 
-Ces fichiers sont supprimés avec la RFC quand elle est finalisée
-(convention du repo : une proposition implémentée se supprime).
+### Sort de ces fichiers au classement (phase 7)
+
+Trois catégories, une règle chacune, sans recouvrement :
+
+| Fichier | Au classement |
+|---|---|
+| `-analysis.md` (et les `-plan.md` hérités) | **Rien à faire.** Le dossier n'est pas versionné : le fichier reste local et disparaît avec la machine. Un plan exécuté n'a plus de lecteur — le code en est la preuve. |
+| `-handoff.md` | **Rien à faire non plus**, à une condition : ce qu'il porte de durable doit être sorti *avant*. Une dette, un piège, une décision non traitée → `add_debt`. Ce qui n'en sort pas est perdu au prochain poste de travail, et c'est assumé pour un récit de séance. |
+| mesures et scripts | **Sortis vers `<evidence>`, versionnés.** Ce sont les seuls porteurs des chiffres qui ferment un mécanisme : ils survivent à la RFC et se citent depuis elle. Une mesure laissée dans le dossier de travail est une mesure perdue. |
+
+Deux conséquences à tenir :
+
+1. **`<work>` n'est pas versionné** (`.gitignore`, depuis le
+   2026-08-18) : c'est un bloc-notes local, jamais une source. Rien de ce qui
+   doit survivre à la session n'y reste — les chiffres vont dans
+   `<evidence>`, la dette par `add_debt`, le statut par `set_status`.
+2. **Un handoff ne fait jamais foi sur l'état d'une RFC.** `read_status` est
+   la seule source du statut ; un handoff dit ce qu'une séance a fait, à sa date.
+   Un handoff conservé qui annonce `READY_TO_COMMIT` sur une RFC classée est un
+   défaut à corriger, pas une information.
 
 ## Machine d'états
 
@@ -217,8 +267,8 @@ plus `BLOCKED` et `REJECTED`, accessibles depuis n'importe quel état.
 
   Un abandon par lassitude ou par manque de temps n'en est pas un :
   sans mesure ni table, l'état reste BLOCKED. Voir « Phase 7 ».
-- **FILED** — document classé dans `docs/rfc/implemented/` ou
-  `docs/rfc/rejected/`. Une RFC n'est finie que classée.
+- **FILED** — document classé dans `<rfc>/implemented/` ou
+  `<rfc>/rejected/`. Une RFC n'est finie que classée.
 
 **DONE ne peut être déclaré que si tout ceci est vrai :**
 
@@ -242,18 +292,17 @@ Un seul point manquant → l'état reste TESTING (ou BLOCKED), jamais DONE.
 | "Continue RFC-XXXX" | 0, puis reprise à la phase indiquée par le handoff |
 | "Finalise RFC-XXXX" | 3 → 4 → 5 → 6 → 7 |
 | "Rejette RFC-XXXX" | prototype + mesure, puis 7 — jamais de rejet sans chiffres |
-| "Statut des RFC" / "Fais le point sur docs/rfc" | 8 uniquement — aucune modification de code, aucun numéro de RFC requis |
+| "Statut des RFC" / "Fais le point sur les RFC" | 8 uniquement — aucune modification de code, aucun numéro de RFC requis |
 | "Vulgarise RFC-XXXX" / "Explique-moi RFC-XXXX simplement" | 9 uniquement — aucune modification de code ; seule écriture autorisée : la section « En clair » en tête du document RFC |
 
 ## Phase 0 — Reprise ("Continue")
 
-1. Lire **uniquement** `docs/.rfc-workflow/RFC-XXXX-handoff.md`, en
-   premier. S'il existe : déterminer l'état courant (`## State`), puis
+1. `read_handoff` **et rien d'autre**, en premier. S'il existe : déterminer l'état courant (`## State`), puis
    ne lire que les fichiers strictement nécessaires au « Next Action »
    et reprendre exactement à ce checkpoint. **Jamais d'analyse globale,
    jamais de relecture massive** des fichiers listés dans « Already
    Analyzed » ; respecter « Do Not Repeat » à la lettre.
-2. S'il n'existe pas : lire `RFC-XXXX-analysis.md` s'il existe, sinon
+2. S'il n'existe pas : lire `<work>/RFC-XXXX-analysis.md` s'il existe, sinon
    vérifier `git log --oneline --grep="RFC-XXXX"` et `git status` pour
    estimer l'état, puis seulement démarrer la phase 1.
 3. Si le handoff est contredit par la réalité (fichier disparu,
@@ -274,7 +323,7 @@ Aucune modification de code pendant cette phase.
 2. Identifier le code réellement concerné : Grep sur les classes,
    fichiers, routes ou commandes que la RFC nomme explicitement.
    N'inspecter que ce code, portion par portion.
-3. Écrire `docs/.rfc-workflow/RFC-XXXX-analysis.md` selon le template
+3. Écrire `<work>/RFC-XXXX-analysis.md` selon le template
    « RFC Analysis » de `references/templates.md` (Objective, Current
    State, Expected State, Gap, Scope, Out of Scope, Dependencies, Risks,
    Implementation Plan, Follow-up).
@@ -366,8 +415,8 @@ Jamais de commit automatique. À cet état :
 
 ## Phase 6 — Handoff
 
-Écrire `docs/.rfc-workflow/RFC-XXXX-handoff.md` selon le template
-« HANDOFF » de `references/templates.md`. Compact (≤ ~1000 tokens) :
+`save_handoff` avec le template « HANDOFF » de
+`references/templates.md`. Compact (≤ ~1000 tokens) :
 il doit suffire à reprendre dans une session vierge sans relire
 l'historique. « Already Analyzed » et « Do Not Repeat » évitent à la
 session suivante de repayer l'exploration.
@@ -380,17 +429,27 @@ travail s'interrompt avant la fin.
 Dernier geste du travail, jamais optionnel. `git mv` fichier par
 fichier — d'autres sessions écrivent le même repo.
 
-**Mettre à jour `docs/rfc/REGISTRY.md` et le registre ADR (`docs/adr/`)** dans le même commit :
-- Mettre à jour la ligne de la RFC (statut, nouveau chemin) et « prochain numéro libre » dans `REGISTRY.md`.
-- Si la RFC introduit ou valide une décision structurante d'architecture (choix de composant, pattern d'élection, modèle d'apprentissage, etc.), **créer ou mettre à jour un ADR synthétique** dans `docs/adr/ADR-XXXX-nom.md` et enregistrer sa ligne dans `docs/adr/README.md`.
+**`set_status` et le registre ADR (`<adr>`)** dans le même commit :
+- `set_status` : statut final et nouveau chemin. En `tracker: files`, cela veut dire la ligne de la RFC **et** « prochain numéro libre » du registre ; en `tracker: github`, le label d'état et la fermeture de l'issue.
+- **Relire les réserves de lecture que la RFC vient de périmer** (`tracker: files` ; en `github`, les réserves vivent dans le corps de l'issue). Une RFC ne périme pas que du code : elle périme ce que le registre affirmait avant elle. RFC-0041 a retiré `php-vcr` du dépôt sans que la réserve RFC-0032 — « `php-vcr` **est** configuré dans `tests/VcrTestCase.php` » — bouge : le registre s'est contredit à soixante lignes d'intervalle. Grep le registre sur les symboles que la RFC supprime ou remplace, et corriger la réserve au lieu d'en ajouter une.
+- Si la RFC introduit ou valide une décision structurante d'architecture (choix de composant, pattern d'élection, modèle d'apprentissage, etc.), **créer ou mettre à jour un ADR synthétique** dans `<adr>/ADR-XXXX-nom.md` et enregistrer sa ligne dans `<adr>/README.md`.
+- **Une réserve qui explique une règle générale n'est pas une réserve, c'est un ADR.** Le suivi dit le statut d'une RFC ; quand un paragraphe y enseigne quelque chose qui vaut au-delà d'elle — « une section *Écarts avec le code actuel* se périme au moment où la RFC est implémentée » — il appartient à `<adr>`, et la réserve n'en garde qu'un renvoi.
 
-**Vérifier les README, dans le même commit.** Une RFC livrée périme
-souvent la documentation d'accueil, et personne ne s'en aperçoit avant
-qu'elle mente depuis dix RFC — `README.md` a décrit « aucune
-fonctionnalité métier implémentée » jusqu'à RFC-0028, et
+**Vérifier la documentation qui décrit le présent, dans le même commit.**
+Une RFC livrée périme souvent ce qui décrit l'état du système, et personne
+ne s'en aperçoit avant que ça mente depuis dix RFC — `README.md` a décrit
+« aucune fonctionnalité métier implémentée » jusqu'à RFC-0028,
 `docs/architecture/README.md` décrivait encore le pipeline du vertical
-slice RFC-0002. Se poser trois questions, et n'écrire que si la réponse
-est oui :
+slice RFC-0002, et `pipeline-execution-flow.md` a annoncé onze étapes
+jusqu'à ce qu'un audit le lise : il n'était nommé dans aucune checklist,
+donc il n'a jamais été relu.
+
+La cible est donc **un dossier, pas une liste de fichiers** (ADR-0050) :
+`describes_present` de la configuration, **y compris les fichiers créés
+dans ces dossiers depuis l'écriture de cette checklist**. Pour Concio :
+`README.md` et tout fichier de `docs/architecture/`.
+
+Se poser trois questions, et n'écrire que si la réponse est oui :
 
 1. l'état annoncé (« ce qui est en place / pas encore ») a-t-il changé ?
 2. un schéma, un pipeline, une cascade, une liste de services ou
@@ -398,17 +457,29 @@ est oui :
 3. la RFC ajoute-t-elle une commande, une variable d'environnement ou
    une étape d'exploitation qu'un nouvel arrivant doit connaître ?
 
-Si rien n'a bougé, ne pas toucher aux README : le bruit documentaire
-coûte autant que le mensonge. Décrire le code tel qu'il est **câblé en
+Si rien n'a bougé, ne rien écrire : le bruit documentaire coûte autant
+que le mensonge. Et ne pas amender une RFC ni un ADR pour les remettre au
+présent — ils datent une décision ; quand une décision ultérieure les
+renverse, on l'écrit **en tête** du document et on ne touche pas au corps
+(patron : RFC-0003 §0). Décrire le code tel qu'il est **câblé en
 production**, pas tel que la RFC l'espérait — un étage prévu mais passé
 à `null` dans le wiring se signale comme non monté.
 
-**Implémentée** → `docs/rfc/implemented/`. Ajouter en tête du document :
-statut, date, et les commits qui la livrent. Le handoff et l'analyse de
-`docs/.rfc-workflow/` restent : ils portent les mesures et les pièges,
-que le document de décision ne contient pas.
+**Fermer le handoff avant de classer.** Un handoff qui survit au
+classement en annonçant `READY_TO_COMMIT` devient une source de vérité
+concurrente, et elle perd : quatorze l'ont fait dans ce dépôt, sur des RFC
+déjà dans `implemented/`. Au classement, le handoff est soit supprimé, soit
+mis à `FILED` avec le sha livreur. Il n'y a pas de troisième issue.
 
-**Rejetée** → `docs/rfc/rejected/`, **un seul fichier** réunissant :
+**Implémentée** → `<rfc>/implemented/`. Ajouter en tête du document :
+statut, date, et les commits qui la livrent. Puis appliquer la table
+« Sort de ces fichiers au classement » de la section *État persistant* :
+l'analyse et le plan partent, le handoff part ou s'archive selon ce qu'il
+porte, les mesures et les scripts restent — hors du dossier de travail.
+Ce qui doit survivre à la RFC, ce sont les chiffres et les pièges, pas le
+récit de la séance.
+
+**Rejetée** → `<rfc>/rejected/`, **un seul fichier** réunissant :
 
 1. la proposition d'origine, intacte — un lecteur doit pouvoir juger sur
    pièces, pas sur le résumé qu'en fait celui qui l'écarte ;
@@ -445,41 +516,53 @@ chiffres — y compris ceux qui contredisent l'attente initiale.
 
 ## Phase 8 — Inventaire (mode statut)
 
-Le seul mode qui balaie `docs/rfc/` au lieu de lire chirurgicalement.
+Le seul mode qui balaie `<rfc>/` au lieu de lire chirurgicalement.
 Il ne touche jamais au code : **aucun `Edit`/`Write` sur `src`, `tests`
 ou `config`** — uniquement des lectures, et des `git mv` de documents
 après confirmation explicite de l'utilisateur.
 
-1. **RFC à plat dans `docs/`** (`ls docs/RFC-*.md`) — jamais triées.
-   Lire les ~10 premières lignes (`Status`, `Board note`, `Document
-   class`), classer, `git mv` vers le sous-dossier correspondant. Un
-   fichier modifié ou non commité par une autre session
+Les sous-dossiers réels sont `proposed/`, `implemented/`, `rejected/`,
+`living/`, `future/` — il n'y a ni `proposals/`, ni `blocked/`, ni RFC à
+plat dans `docs/`. Balayer un dossier inexistant donne un mode statut qui
+ne trouve jamais rien et qui rassure à tort : c'est ce qui a laissé cinq
+lignes du registre annoncer « implémentée » avec un chemin
+`docs/rfc/implemented/…` pendant que les documents dormaient dans
+`proposed/`.
+
+1. **`<rfc>/proposed/`** — le dossier qui compte, à relire à chaque
+   passage : un statut a pu changer depuis le dernier. Une proposition
+   dont le code est livré est une phase 7 oubliée par la session qui l'a
+   traitée — proposer le déplacement vers `implemented/`, ne pas le faire
+   d'office. Une RFC modifiée ou non commitée par une autre session
    (`git status --short`) **ne se déplace jamais** : le signaler.
-   Ces ~10 lignes disent aussi si le document ouvre sur `## En clair`.
-   Ne pas le rédiger ici — cela demanderait de lire chaque RFC en entier,
-   ce que ce mode s'interdit : les lister dans la sortie comme « à
-   vulgariser », et le faire à la prochaine phase 1 qui les ouvrira, ou
-   sur demande.
-2. **`docs/rfc/proposals/`** — relire chacune : son statut a pu changer
-   depuis le dernier passage. Une proposition livrée mais restée là est
-   une phase 7 oubliée par la session qui l'a traitée : proposer le
-   déplacement vers `implemented/`, ne pas le faire d'office.
-3. **`docs/rfc/blocked/`** — lecture rapide : le blocage cité a-t-il été
-   levé ? Si oui, vers `proposals/`.
+   Les ~10 premières lignes disent aussi si le document ouvre sur
+   `## En clair`. Ne pas le rédiger ici — cela demanderait de lire chaque
+   RFC en entier, ce que ce mode s'interdit : les lister dans la sortie
+   comme « à vulgariser », et le faire à la prochaine phase 1 qui les
+   ouvrira, ou sur demande.
+2. **RFC arrivées hors dossier** (`ls <rfc>/*.md` et le dossier parent)
+   — jamais triées. Lire les ~10 premières lignes, classer, `git mv`.
+   Zéro aujourd'hui : le contrôle reste, il coûte une commande.
+3. **`<rfc>/future/`** — lecture rapide : le déclencheur nommé par le
+   document s'est-il matérialisé ? Si oui, vers `proposed/`.
 4. **`implemented/`, `rejected/`, `living/`** — ignorés par défaut, sauf
    si `$ARGUMENTS` cible l'une d'elles.
-4bis. **`docs/rfc/REGISTRY.md`** — vérifier qu'il reflète les
-   déplacements constatés et que « prochain numéro libre » est juste.
-   C'est le seul fichier qu'un auteur de RFC a besoin de lire pour
-   numéroter.
-4ter. **`README.md` et `docs/architecture/README.md`** — lecture rapide :
+4bis. **`list_all`** — vérifier que le suivi reflète les déplacements
+   constatés et que `next_number` rendrait le bon numéro. C'est la seule
+   lecture dont un auteur de RFC a besoin pour numéroter. La cohérence *mécanique* — chemin cité qui existe, RFC du
+   disque inscrite, ADR indexé, lien mort — n'est plus à relire : elle
+   est tenue par `tests/Architecture/DocumentationConsistencyTest.php`
+   (ADR-0050). Lancer la suite `architecture` vaut mieux que la relire.
+   Ce que le test ne dit pas, et qui reste le travail de ce mode : si le
+   **statut** annoncé correspond au code livré.
+4ter. **Les fichiers de `describes_present`** — lecture rapide :
    l'état annoncé cite-t-il encore une RFC dépassée, un composant
    remplacé, un lien vers un dossier qui n'existe plus ? Le signaler
    dans la sortie comme dette documentaire, sans réécrire ici (c'est la
    phase 7 qui écrit).
 5. **Ne jamais conclure « implémentée » sur la foi du document.** Si le
    `Status` ne cite pas de sha, chercher dans
-   `git log --oneline --all -- docs/rfc/*/RFC-XXXX*` et dans les commits
+   `git log --oneline --all -- <rfc>/*/RFC-XXXX*` et dans les commits
    `feat`/`fix` qui mentionnent le numéro ; au moindre doute, grep le
    code pour la classe ou la méthode annoncée comme livrée.
 
