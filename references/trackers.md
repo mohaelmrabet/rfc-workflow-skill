@@ -16,6 +16,7 @@ redécouvrir un chemin par exploration alors que la config le nomme.
 | Clé | Défaut | Sert à |
 |---|---|---|
 | `tracker` | `files` | choisir la colonne du tableau ci-dessous |
+| `mirror` | `null` | projection facultative ; `null` ou vide = aucune |
 | `paths.rfc` | `docs/rfc` | où vivent les documents |
 | `paths.registry` | `<rfc>/REGISTRY.md` | `files` uniquement |
 | `paths.work` | `docs/.rfc-workflow` | analyses et handoffs locaux |
@@ -69,6 +70,38 @@ Un tracker porte un *statut*. Un document normatif de plusieurs centaines
 de lignes doit se relire en diff, à côté du code qu'il décide : une issue
 ne sait pas faire ça. `tracker: github` déplace le suivi, pas les
 documents.
+
+## Le miroir — regarder un second système sans lui rien confier
+
+`mirror: <backend>` projette le suivi vers un autre système. Une seule
+règle, et elle suffit à écarter le problème des deux vérités :
+
+> **Le miroir s'écrit, ne se lit jamais.** `read_status`, `read_handoff`
+> et `next_number` interrogent toujours `tracker`, jamais le miroir.
+
+Une projection qu'on ne lit pas n'est pas une source concurrente : quand
+elle diverge, on l'écrase depuis le tracker sans rien perdre. C'est ce
+qui permet d'essayer un système en vraie grandeur — le voir vivre sur ses
+propres données — sans lui remettre l'état du projet.
+
+Une opération de plus, appelée après `set_status` et jamais avant :
+
+| Opération | `mirror: github` |
+|---|---|
+| `mirror_push` | l'issue existe (`gh issue list --search "RFC-XXXX in:title"`) → `gh issue edit` ses labels ; sinon `gh issue create`. Au classement, `gh issue close`. **Idempotente** : relancer ne duplique rien |
+
+Un échec du miroir ne bloque **jamais** le travail : le signaler et
+continuer. L'inverse ferait dépendre le dépôt d'un service distant pour
+classer une RFC.
+
+**`mirror` vaut `null` par défaut**, et une clé vide (`mirror:`) vaut
+`null` : la projection est l'exception, jamais l'état normal. Couper
+l'essai, c'est vider la valeur — pas remanier le fichier. Les réglages du
+backend (`github.repo`…) restent alors en place, inertes, et l'essai
+reprend en réécrivant un mot.
+
+Rien à rapatrier au passage : les fichiers n'ont jamais cessé d'être la
+source. C'est la contrepartie d'une projection qu'on ne lit pas.
 
 ## Le board, en `tracker: github`
 
