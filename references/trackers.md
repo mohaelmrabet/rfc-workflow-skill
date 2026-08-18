@@ -89,13 +89,29 @@ projette, après chaque `set_status` et jamais avant :
 
 | Opération | `mirror: github` |
 |---|---|
-| `mirror_setup` | crée ce qui manque, et rien d'autre : les labels (`rfc`, `dette`, `living`, `future`, `state:*`), le projet (`gh project create --owner <compte> --title <projet>`) et sa vue tableau, puis y verse les issues ouvertes (`gh project item-add`). **Idempotente** : ce qui existe est laissé tel quel |
+| `mirror_setup` | crée ce qui manque, et rien d'autre : les labels, le projet (`gh project create`), ses vues, puis y verse les issues ouvertes (`gh project item-add`, une par URL). **Idempotente** : réajouter une issue déjà présente ne la duplique pas |
 | `mirror_push` | l'issue existe (`gh issue list --search "RFC-XXXX in:title"`) → `gh issue edit` ses labels ; sinon `gh issue create`. Au classement, `gh issue close`. **Idempotente** : relancer ne duplique rien |
 
 `mirror_setup` demande le scope `project` sur le jeton, que `gh` n'accorde
-pas par défaut. S'il manque, le dire et demander `gh auth refresh -s
-project` — cette commande est interactive, elle appartient à l'utilisateur.
-Le reste du miroir fonctionne sans ce scope : seul le tableau en dépend.
+pas par défaut. Le reste du miroir fonctionne sans lui : seul le tableau en
+dépend. Pour savoir si le scope est là, ne pas se fier à `gh auth status`,
+qui lit un état local : demander à GitHub lui-même —
+
+```
+gh api -i user --hostname github.com | grep -i '^x-oauth-scopes'
+```
+
+S'il manque, le dire et s'arrêter là. `gh auth refresh -s project` est
+interactive et appartient à l'utilisateur ; insister au-delà de deux essais
+coûte plus que le tableau ne vaut, et créer un projet à la main prend trois
+clics pour le même résultat.
+
+**Ce que l'API permet, et ce qu'elle ne permet pas.** Les vues se créent et
+se filtrent par GraphQL — `createProjectV2View` (`name`, `layout` parmi
+`BOARD_LAYOUT` / `TABLE_LAYOUT` / `ROADMAP_LAYOUT`), puis
+`updateProjectV2View` avec `filter`. En revanche le **regroupement** des
+colonnes et le workflow *auto-add* ne sont exposés nulle part : les poser
+reste un clic dans l'interface, à annoncer plutôt qu'à promettre.
 
 **Créer le tableau n'est pas le piloter.** `mirror_setup` l'installe une
 fois ; ensuite les colonnes viennent du *group by* sur les labels, que le
