@@ -1,7 +1,7 @@
 ---
 name: rfc-workflow
-description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Générique et réutilisable sur n'importe quel projet : les chemins, la commande de test et l'emplacement du suivi (fichiers versionnés ou issues GitHub) sont déclarés par un `.rfc-workflow.yml` à la racine du projet, jamais codés dans le skill. Couvre aussi l'inventaire des RFC (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur les RFC, de rendre une RFC compréhensible en langage courant, ou d'AUDITER une RFC déclarée livrée pour vérifier qu'elle l'est vraiment — livrables présents, mécanismes confrontés aux données réelles du dépôt, faux « OK » débusqués (ex. "Implémente RFC-0092", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029", "Audite RFC-0029").
-argument-hint: "[analyse|implémente|review|audite|continue|finalise|rejette|statut|vulgarise] [RFC-XXXX]"
+description: Workflow complet et économe en tokens pour travailler sur une RFC du projet — analyse ciblée, scope, plan, implémentation, tests, review, matrice de conformité, handoff, classement final, vulgarisation et reprise entre sessions. Ne réécrit jamais le corps du document RFC (ça c'est rfc-review) ; seule exception, le mode « vulgarise » qui insère en tête du document une section « En clair » expliquant la RFC en langage courant. Il classe en revanche la RFC sur laquelle il vient de travailler, dans implemented/ ou rejected/, et tient le registre des numéros — il IMPLÉMENTE ce que la RFC décide, avec un principe strict qualité/contexte consommé — pas de subagents par défaut, pas de scan global du repo, lectures chirurgicales, tests ciblés, handoff compact réutilisable dans une nouvelle session. Générique et réutilisable sur n'importe quel projet : les chemins, la commande de test et l'emplacement du suivi (fichiers versionnés ou issues GitHub) sont déclarés par un `.rfc-workflow.yml` à la racine du projet, jamais codés dans le skill — un mode "init" amorce ce fichier et la scaffolding minimale sur un projet neuf qui n'en a pas encore. Couvre aussi l'inventaire des RFC (mode "statut", ex-skill rfc-status, fusionné ici) — tri des RFC nouvellement arrivées, détection de celles livrées mais restées non classées, registre des numéros. Utiliser quand l'utilisateur demande d'analyser, implémenter, reviewer, continuer, finaliser ou rejeter une RFC, de faire le point sur les RFC, de rendre une RFC compréhensible en langage courant, d'AUDITER une RFC déclarée livrée pour vérifier qu'elle l'est vraiment, ou d'initialiser le skill sur un nouveau projet — livrables présents, mécanismes confrontés aux données réelles du dépôt, faux « OK » débusqués (ex. "Implémente RFC-0092", "Rejette RFC-0023", "Statut des RFC", "Vulgarise RFC-0029", "Audite RFC-0029", "Initialise rfc-workflow sur ce projet").
+argument-hint: "[analyse|implémente|review|audite|continue|finalise|rejette|statut|vulgarise|init] [RFC-XXXX]"
 allowed-tools: [Read, Edit, Write, Bash, Grep, Glob]
 ---
 
@@ -12,7 +12,7 @@ problèmes, pré-commit ; révisé le 2026-08-18 par l'audit documentaire
 (sort des fichiers de travail, cible de la checklist de classement,
 dossiers réellement balayés par le mode statut), puis rendu **générique**
 le même jour : la méthode reste ici, les données du projet passent dans
-`.rfc-workflow.yml`, et le suivi d'état s'adresse par sept opérations
+`.rfc-workflow.yml`, et le suivi d'état s'adresse par huit opérations
 (`references/trackers.md`) au lieu de chemins en dur.
 
 Cible : `$ARGUMENTS`. Si le mode ou le numéro de RFC manque, demander —
@@ -65,6 +65,13 @@ Règles transverses, valables dans tous les modes :
   portion utile. Ne pas relire ce qui est déjà en contexte ou déjà
   consigné dans le fichier d'analyse.
 - **Sorties filtrées** : `| head`, extraction du champ JSON utile, etc.
+- **Synchroniser le suivi à chaque avancement**, jamais seulement à la
+  fin : le document qui porte l'état (`<debt>`, le registre, l'en-tête de
+  la RFC) **et** le miroir s'il existe, dans le même geste que le travail
+  qu'ils décrivent. Un avancement partiel se synchronise comme un
+  achèvement — réduit à ce qui subsiste. Détail des opérations et
+  corollaires dans `references/trackers.md`. Sans cela, celui qui regarde
+  le tableau voit `todo` sur un bug corrigé et le retraite.
 - **Question avant chaque exploration supplémentaire** : « cette lecture
   est-elle nécessaire pour le Next Action / la phase en cours ? » Si
   non, ne pas la faire. Ne pas relancer un test déjà prouvé sauf si le
@@ -188,7 +195,8 @@ signaler.
 Dans tout ce document, `<rfc>`, `<work>`, `<debt>`, `<evidence>` et
 `<adr>` désignent les chemins de cette configuration. Le suivi d'état ne
 se touche que par les opérations `next_number`, `read_status`,
-`set_status`, `list_all`, `save_handoff` / `read_handoff` et `add_debt`,
+`set_status`, `list_all`, `save_handoff` / `read_handoff`, `add_debt` et
+`close_debt` — les deux dernières projetant vers le miroir comme les autres,
 définies une fois pour toutes dans `references/trackers.md`. Une phase
 qui écrirait un chemin de registre en dur casserait le skill sur le
 projet suivant — c'est la seule règle que la généricité ajoute.
@@ -292,8 +300,57 @@ Un seul point manquant → l'état reste TESTING (ou BLOCKED), jamais DONE.
 | "Continue RFC-XXXX" | 0, puis reprise à la phase indiquée par le handoff |
 | "Finalise RFC-XXXX" | 3 → 4 → 5 → 6 → 7 |
 | "Rejette RFC-XXXX" | prototype + mesure, puis 7 — jamais de rejet sans chiffres |
+| "Traite les bugs / la dette" | vérifier **chaque entrée sur le code** avant d'agir (une entrée dit ce qui était vrai à sa date), corriger ce qui relève d'un correctif, puis `close_debt` + miroir. Ce qui demande un arbitrage ou déplace une mesure reste en dette, dit comme tel |
 | "Statut des RFC" / "Fais le point sur les RFC" | 8 uniquement — aucune modification de code, aucun numéro de RFC requis |
 | "Vulgarise RFC-XXXX" / "Explique-moi RFC-XXXX simplement" | 9 uniquement — aucune modification de code ; seule écriture autorisée : la section « En clair » en tête du document RFC |
+| "Initialise rfc-workflow" / "Configure le suivi des RFC sur ce projet" | Init uniquement — aucun numéro de RFC requis ; n'écrit que `.rfc-workflow.yml` et la scaffolding minimale |
+
+## Phase Init — Amorçage d'un projet neuf
+
+Seul mode qui **écrit** `.rfc-workflow.yml` — tous les autres le lisent
+seulement. Idempotent et défensif : jamais de réécriture d'une config
+existante, jamais d'invention d'une valeur qu'un défaut ne couvre pas.
+
+1. `cat .rfc-workflow.yml` à la racine. **S'il existe déjà**, l'afficher
+   et s'arrêter là — ce mode amorce un projet qui n'a rien, ce n'est pas
+   un mode de reconfiguration. Une modification d'un projet déjà
+   configuré se fait à la main ou sur demande explicite d'un changement
+   précis, jamais en relançant Init.
+2. S'il n'existe pas, ne demander que ce qu'aucun défaut de
+   `references/trackers.md` ne peut raisonnablement combler :
+   - `tracker` — `files` ou `github` (défaut `files`) ;
+   - `tests` — la commande de test ciblé. Sans elle le skill redemandera
+     à chaque phase 3 ; autant la fixer une fois ici. Si l'utilisateur ne
+     la connaît pas encore, laisser la clé absente plutôt qu'inventer une
+     commande.
+   - `mirror` — seulement si `tracker: files` et que l'utilisateur veut
+     une projection GitHub ; sinon rester `null`, jamais posé par défaut.
+   Ne pas demander `paths.*` ni `describes_present` : ils prennent les
+   défauts de `references/trackers.md` sauf si l'utilisateur signale de
+   lui-même une convention différente (docs ailleurs que `docs/`, etc.).
+3. Écrire `.rfc-workflow.yml` avec **seulement les clés qui s'écartent du
+   défaut** — un projet qui accepte tout obtient un fichier de quelques
+   lignes, pas un gabarit qui recopie `references/trackers.md`. Un
+   commentaire d'en-tête bref renvoie à ce fichier pour la liste
+   complète des clés et de leurs défauts.
+4. Créer la scaffolding minimale que le tracker choisi exige pour
+   fonctionner, rien de plus :
+   - `<rfc>/proposed/`, `<rfc>/implemented/`, `<rfc>/rejected/` —
+     `living/` et `future/` seulement si l'utilisateur en a l'usage ;
+   - en `tracker: files` : `<rfc>/REGISTRY.md` s'il n'existe pas encore,
+     avec l'en-tête minimal (colonnes RFC | Titre | Statut | Chemin) et
+     une ligne « prochain numéro libre : RFC-0001 » ;
+   - `<work>` ajouté à `.gitignore` s'il n'y est pas déjà — c'est un
+     bloc-notes local, jamais versionné (voir « État persistant ») ;
+   - en `mirror: github` : signaler `mirror_setup`
+     (`references/trackers.md`) comme geste restant à faire, ne pas le
+     lancer d'office — il demande le scope `project` sur le jeton `gh`,
+     que l'utilisateur doit accorder lui-même.
+5. Ne rien faire de plus : pas de RFC exemple, pas de contenu dans
+   `<evidence>` ou `<adr>` — Architecture Restraint (`CLAUDE.md`) veut
+   qu'un dossier se crée au premier besoin réel, pas par anticipation.
+6. Afficher le fichier écrit et la liste des dossiers créés, puis
+   s'arrêter — pas d'enchaînement automatique sur une phase 1.
 
 ## Phase 0 — Reprise ("Continue")
 
@@ -434,6 +491,7 @@ fichier — d'autres sessions écrivent le même repo.
 - **Relire les réserves de lecture que la RFC vient de périmer** (`tracker: files` ; en `github`, les réserves vivent dans le corps de l'issue). Une RFC ne périme pas que du code : elle périme ce que le registre affirmait avant elle. RFC-0041 a retiré `php-vcr` du dépôt sans que la réserve RFC-0032 — « `php-vcr` **est** configuré dans `tests/VcrTestCase.php` » — bouge : le registre s'est contredit à soixante lignes d'intervalle. Grep le registre sur les symboles que la RFC supprime ou remplace, et corriger la réserve au lieu d'en ajouter une.
 - Si la RFC introduit ou valide une décision structurante d'architecture (choix de composant, pattern d'élection, modèle d'apprentissage, etc.), **créer ou mettre à jour un ADR synthétique** dans `<adr>/ADR-XXXX-nom.md` et enregistrer sa ligne dans `<adr>/README.md`.
 - **Une réserve qui explique une règle générale n'est pas une réserve, c'est un ADR.** Le suivi dit le statut d'une RFC ; quand un paragraphe y enseigne quelque chose qui vaut au-delà d'elle — « une section *Écarts avec le code actuel* se périme au moment où la RFC est implémentée » — il appartient à `<adr>`, et la réserve n'en garde qu'un renvoi.
+- **`set_status` en `tracker: files` avec `mirror: github` n'implique pas `mirror_push`** — ce sont deux opérations distinctes, et la seconde s'oublie sans qu'aucune erreur ne le signale (voir « Le miroir jamais posé » dans `references/trackers.md`). Si le projet fournit un script de vérification (convention `bin/check-*-mirror*`), le lancer maintenant.
 
 **Vérifier la documentation qui décrit le présent, dans le même commit.**
 Une RFC livrée périme souvent ce qui décrit l'état du système, et personne
@@ -560,6 +618,13 @@ lignes du registre annoncer « implémentée » avec un chemin
    remplacé, un lien vers un dossier qui n'existe plus ? Le signaler
    dans la sortie comme dette documentaire, sans réécrire ici (c'est la
    phase 7 qui écrit).
+4quater. **`mirror: github`** — si le projet fournit un script de
+   vérification (`bin/check-*-mirror*`), le lancer : il diffe le registre
+   contre `gh issue list` en un seul appel et rattrape le cas où une
+   phase 7 antérieure a classé une RFC sans jamais appeler `mirror_push`
+   (voir « Le miroir jamais posé » dans `references/trackers.md`). Sans
+   script, ne pas relire le registre RFC par RFC — trop coûteux pour ce
+   mode ; le signaler comme dette d'outillage.
 5. **Ne jamais conclure « implémentée » sur la foi du document.** Si le
    `Status` ne cite pas de sha, chercher dans
    `git log --oneline --all -- <rfc>/*/RFC-XXXX*` et dans les commits
